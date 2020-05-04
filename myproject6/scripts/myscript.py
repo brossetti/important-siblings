@@ -1,4 +1,4 @@
-# myproject6/myscript.py
+# myproject6/scripts/myscript.py
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'classes'))

@@ -1,4 +1,4 @@
-# myproject5/myscript.py
+# myproject5/scripts/myscript.py
 
 from myproject5.classes.myclass import MyClass
 import sys
