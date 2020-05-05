@@ -1,4 +1,4 @@
-# myproject6/myclass.py
+# myproject6/classes/myclass.py
 
 class MyClass:
     def __init__(self):

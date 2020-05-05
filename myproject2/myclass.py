@@ -1,4 +1,4 @@
-# myproject1/myclass.py
+# myproject2/myclass.py
 
 class MyClass:
     def __init__(self):
