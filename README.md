@@ -121,7 +121,7 @@ MyClass initialized
 myclass attributes...
 Module: myclass
 Package: 
-File Path: /Users/rossettib/devel/important-siblings/myproject0/myclass.py
+File Path: /path/to/important-siblings/myproject0/myclass.py
 ```
 
 Awesome! We can see a couple of interesting thing in this result. First, `/path/to/important-siblings/myproject0` is indeed in our list of `sys.path` search directories. The module name for `myscript.py` is `__main__` (because we called it directly) and `myclass` for `myclass.py` (because it was imported). There is also a slight difference in the package names (i.e., `None` for `myscript.py` and undefined for `myclass.py`). Since neither module is in a package, neither `__package__` attribute is set. However, the [docs](https://docs.python.org/3/reference/import.html#__package__) says that, "when the module is not a package, `__package__` should be set to the empty string for top-level modules, or for submodules, to the parent package’s name." Speaking of packages, let's see if there is another solution to this problem that uses packages.
@@ -202,7 +202,7 @@ Package: myproject1
 File Path: /path/to/important-siblings/myproject1/myclass.py
 ```
 
-Perfect, we can still import `MyClass` when our modules are setup as a package. The down side is that we are much more restricted in how we can execute `myscript.py`. To remove this limitation, you can take the extra step of installing our local package into `site-packages` using the `pip install -e` command. Doing so will add the path to your package onto `sys.path`.
+Perfect, we can still import `MyClass` when our modules are setup as a package. The down side is that we are much more restricted in how we can execute `myscript.py`. To remove this limitation, you can take the extra step of installing our local package into `site-packages` using the `pip install -e` command. This will create a symlink inside `site-packages` to your local package directory. Since `site-packages` is already on `sys.path`, Python will always be able to find your local package. Keep in mind that you will also need to include a `setup.py` file in your root package if you want to use `pip install -e`.
 
 Interestingly, we don't really need the `__init__.py` file to make this package solution work. Python has two types of packages: (1) [regular packages](https://docs.python.org/3/glossary.html#term-regular-package) and (2) [namespace packages](https://docs.python.org/3/glossary.html#term-namespace-package). What we just saw was a regular package (i.e., anything that includes `__init__.py` files). [Namespace package](https://www.python.org/dev/peps/pep-0420/) are intended to allow single Python packages to be spread across multiple directories. They are implicitly created and initialized when Python is searching for the module of an `import` statement.
 
@@ -234,7 +234,22 @@ Package: myproject2
 File Path: /path/to/important-siblings/myproject2/myclass.py
 ```
 
-Sure enough, Python still implicitly recognizes that both `myclass.py` and `myscript.py` are in the `myproject2` package. As a result, the `from myprojectX.myclass import MyClass` statement works identically with either regular or namespace packages. Let's mix things up a bit by looking at a different directory hierarchy for our project.
+Sure enough, Python still implicitly recognizes that both `myclass.py` and `myscript.py` are in the `myproject2` package. As a result, the `from myprojectX.myclass import MyClass` statement works identically with either regular or namespace packages. Before me move on, we should probably see how this all works if we are using the Python REPL.
+
+```text
+$ cd /path/to/important-siblings
+$ python
+>>> from myproject2.myclass import MyClass
+>>> mc = MyClass()
+MyClass initialized
+>>> mc.dump()
+myclass attributes...
+Module: myproject2.myclass
+Package: myproject2
+File Path: /path/to/important-siblings/myproject2/myclass.py
+```
+
+Just as before, we are able to load `MyClass` within the Python REPL since `myclass` is implicitly a module of the `myproject2` namespace package. Let's switch gears a bit by looking at a different directory hierarchy for our project.
 
 ## Importing a Module from a Child Directory
 
@@ -428,7 +443,7 @@ What if we modify `sys.path` itself? In fact, the [docs](https://docs.python.org
 Moreover, this is one of the most commonly suggested methods for importing modules without dealing with regular or namespace packages. Adding a hard-coded path to `sys.path` would be a bad idea. If the script ever gets moved, your code will break. Fortunately, the `os` package will allow us to build a relative path at runtime.
 
 ```python
-# myproject6/myscript.py
+# myproject6/scripts/myscript.py
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'classes'))
@@ -470,6 +485,64 @@ File Path: myproject6/scripts/../classes/myclass.py
 
 We can see that `sys.path.append` has added a new directory onto the end of `sys.path`. Now comes the controversy. Is this a hack or is this a legitimate solution?
 
-## Hack or Not
+#### Hack or Not?
 
-Many people refer to the `sys.path.append` method as being a hack. But why? One of the more popular reasons is that, "modifying `sys.path` at runtime is a bad idea." This point is not so clear to me. In fact, all of our methods modify `sys.path`. The only difference is in how we go about making the modification. I suspect the more likely reason is that `sys.path.append` is ugly. Mixing `import` statements with a line of code just looks and feels wrong. It seems like there should be a more Pythonic way of doing this. Unfortunately, there is not. We can solve our problem with packages, `PYTHONPATH`, or `sys.path`. Treating everything as a package certainly makes the code cleaner, but it also adds a lot of complication. I think there is room for both solutions, and it depends on your project. For a big project, you are probably already using packages, and you might just want to continue. For a small project, however, I think the `sys.path.append` method is perfectly fine. It's fast, requires only one line, and doesn't alter your existing workflow. Aside from being ugly, there does not appear to be anything hacky about it. I suggest using whichever method makes your project easier.
+Many people refer to the `sys.path.append` method as being a hack. But why? One of the more popular reasons is that, "modifying `sys.path` at runtime is a bad idea." This point is not so clear to me. In fact, all of our methods modify `sys.path`. The only difference is in how we go about making the modification. I suspect the more likely reason is that `sys.path.append` is ugly. Mixing `import` statements with a line of code just looks and feels wrong. It seems like there should be a more Pythonic way of doing this. Unfortunately, there is not. We can solve our problem with packages, `PYTHONPATH`, or `sys.path`. Treating everything as a package certainly makes the code cleaner, but it also adds a lot of complication. I think there is room for both solutions, and it depends on your project. For a big project, you are probably already using packages, and you might just want to continue. For a small project, however, I think the `sys.path.append` method is perfectly fine. It's fast, requires only one line, and doesn't alter your existing workflow. Aside from being ugly, there does not appear to be anything hacky about it.
+
+## Wrapping Things Up
+
+If you want to import code from `myclass.py` into another module (regardless of their relative locations), Python must be able to find the `myclass` module. In general, this means that the `myclass` module must exist somewhere within a directory stored in `sys.path`. There are a bunch of methods for getting the `myclass.py` parent directory onto `sys.path`, but two methods prevail. First, you can modify `sys.path` directly with the `sys.path.append` (or `sys.path.insert`) method. This will push whatever directory you want onto the list of searchable module locations at runtime. Some people don't like this option because it requires that you modify `sys.path` directly. The more elegant (albeit more complicated) solution is to make the parent directory of `myclass.py` into a package. Installing this package into `site-packages` with `pip install -e` will create a symlink inside `site-packages` that points to the package containing `myclass.py`. Since `site-packages` already exists in `sys.path`, the `myclass` module will be available everywhere. The last detail is whether you use a regular or namespace package. Since [namespace packages are new](https://www.python.org/dev/peps/pep-0420/) (as of Python 3.3), it is probably best to use a regular package with `__init__.py` files. Although they require a bit of extra work, the `__init__.py` files are a clear indicator to other programmers that they are working with a Python package.
+
+## The Final Solution / TL;DR
+
+If you are in a rush (or have one-off code), you can import `myclass.py` into `myscript.py` from sibling directories using the following code.
+
+```python
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'classes'))
+from myclass import MyClass
+```
+
+Check out the `myproject6` directory for a complete example of the quick n' dirty method.
+
+If you want to follow best practices, you should add `__init__.py` files to your directories to create a Python package (`mypkg`) that contains two subpackages (`classes` and `scripts`). You will also need a `setup.py` file so that you can install the package into `site-packages` using `pip install -e`. Your project will end up having the following structure.
+
+```text
+bestpractice/
+├── setup.py
+└── mypkg/
+      ├── __init__.py
+      ├── classes/
+      │     ├── __init__.py
+      │     └── myclass.py
+      └── scripts/
+            ├── __init__.py
+            └── myscript.py
+```
+
+Inside `setup.py`, you will have to include some basic information about the package (i.e., the name, version, and list of included packages).
+
+```python
+# bestpractice/setup.py
+
+from setuptools import setup, find_packages
+
+setup(
+    name='mypkg',
+    version='0.0.1',
+    packages=find_packages()
+)
+```
+
+To actually install `mypkg` into `site-packages`, you will need to do the following.
+
+```text
+$ cd /path/to/bestpractice
+$ pip install -e .
+Obtaining file:///path/to/important-siblings/bestpractice
+Installing collected packages: mypkg
+  Running setup.py develop for mypkg
+Successfully installed mypkg
+```
+
+Finally, you can execute `myscript.py` from anywhere using `python /path/to/bestpractice/mpkg/scripts/myscript.py` or `python -m mypkg.scripts.myscript`. Enjoy!
