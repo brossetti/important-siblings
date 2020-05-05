@@ -503,7 +503,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'classes'))
 from myclass import MyClass
 ```
 
-Check out the `myproject6` directory for a complete example of the quick n' dirty method.
+This solution uses `sys.path.append` to add the directory containing `myclass.py ` to your module search path. Check out the `myproject6` directory for a complete example of the quick n' dirty method.
 
 If you want to follow best practices, you should add `__init__.py` files to your directories to create a Python package (`mypkg`) that contains two subpackages (`classes` and `scripts`). You will also need a `setup.py` file so that you can install the package into `site-packages` using `pip install -e`. Your project will end up having the following structure.
 
